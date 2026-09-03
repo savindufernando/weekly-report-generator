@@ -1,0 +1,29 @@
+# --- web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --- validation / settings ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --- database ---
+SQLAlchemy==2.0.36
+alembic==1.14.0
+PyMySQL==1.1.1
+cryptography==44.0.0          # PyMySQL needs this for sha2 auth plugins
+
+# --- auth ---
+python-jose[cryptography]==3.3.0
+passlib==1.7.4
+bcrypt==4.0.1                 # pinned: passlib 1.7.4 reads bcrypt.__about__, removed in 4.1+
+
+# --- ai (bonus, optional at runtime via AI_ENABLED) ---
+openai==1.59.6
+
+# --- dev / test ---
+pytest==8.3.4
+pytest-asyncio==0.25.2
+httpx==0.28.1
+ruff==0.8.6
