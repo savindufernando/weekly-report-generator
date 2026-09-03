@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.exceptions import AppException
 from app.database.session import engine
@@ -116,6 +117,7 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestIDMiddleware)
 
     register_exception_handlers(app)
+    app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
     @app.get("/health", tags=["ops"], summary="Liveness and database check")
     def health() -> dict:
