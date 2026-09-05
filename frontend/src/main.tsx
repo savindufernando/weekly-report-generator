@@ -5,6 +5,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import App from './App';
 import { ApiError } from './services/api';
+import { AuthProvider } from './contexts/AuthContext';
+import { SnackbarProvider } from './contexts/SnackbarContext';
 import { ThemeModeProvider } from './contexts/ThemeModeContext';
 
 const queryClient = new QueryClient({
@@ -12,10 +14,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       refetchOnWindowFocus: false,
-      // Retrying a 401/403/404 is pointless load that only delays the error the
-      // user needs to see. A 5xx is worth retrying.
+      // Retrying a 4xx is pointless load that only delays the error the user
+      // needs to see. A 5xx is worth a couple of attempts.
       retry: (failureCount, error) =>
-        error instanceof ApiError && [401, 403, 404, 409, 422].includes(error.status)
+        error instanceof ApiError && error.status >= 400 && error.status < 500
           ? false
           : failureCount < 2,
     },
@@ -27,7 +29,12 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeModeProvider>
       <QueryClientProvider client={queryClient}>
-        <App />
+        <SnackbarProvider>
+          {/* AuthProvider needs the query client to clear the cache on logout. */}
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </SnackbarProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </ThemeModeProvider>

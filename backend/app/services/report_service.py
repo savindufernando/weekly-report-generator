@@ -169,8 +169,14 @@ class ReportService:
 
     # ------------------------------------------------------------------ submit
 
-    def submit(self, report: Report, actor: User) -> tuple[Report, list[str]]:
+    def submit(
+        self, report: Report, actor: User, *, at: datetime | None = None
+    ) -> tuple[Report, list[str]]:
         """Submit or resubmit a report for review.
+
+        `at` overrides the timestamp. Only the seed script passes it, so that
+        demo history lands in the past — the API never supplies it, and a client
+        therefore cannot backdate a submission to dodge the lateness rule.
 
         Ordering inside the transaction is deliberate: validate the transition,
         write the snapshot, *then* advance the status. If anything fails the
@@ -198,7 +204,7 @@ class ReportService:
             # rather than silently storing an identical version.
             warnings.append("no_changes_detected")
 
-        now = datetime.utcnow()
+        now = at or datetime.utcnow()
 
         # 3. Snapshot BEFORE the status moves, in this same transaction.
         version = self.versions.create_snapshot(report, actor, submitted_at=now)
