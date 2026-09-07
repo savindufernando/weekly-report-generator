@@ -18,7 +18,11 @@ import {
   ComplianceDonut, ProjectWorkloadChart, StatusByMemberChart, TaskTrendChart,
   TimeByTypeChart, WorkloadBalanceList,
 } from '../../components/dashboard/charts';
-import { useProjects } from '../../hooks/useReports';
+import {
+  TeamReportsPanel, type TeamReportFilters,
+} from '../../components/dashboard/TeamReportsPanel';
+import { useUsers } from '../../hooks/useAdmin';
+import { useProjects, useReports } from '../../hooks/useReports';
 import {
   useActivityFeed, useDashboardSummary, useStatusByMember, useTaskTrend,
   useTeamStatus, useTimeByType, useWorkloadBalance, useWorkloadByProject,
@@ -47,6 +51,41 @@ export default function TeamDashboardPage() {
     setParams(updated, { replace: true });
   };
 
+  /*
+   * The "All reports" panel keeps its own filters, also in the URL. Defaults
+   * span the eight weeks ending with the selected one, so the panel opens with
+   * the same period the charts above it describe.
+   */
+  const reportFilters: TeamReportFilters = {
+    userId: params.get('member') ? Number(params.get('member')) : undefined,
+    projectId,
+    status: params.get('status') ?? '',
+    from: params.get('rangeFrom') ?? shiftWeeks(week, -7),
+    to: params.get('rangeTo') ?? week,
+    limit: Number(params.get('limit') ?? 20),
+    offset: Number(params.get('offset') ?? 0),
+  };
+
+  const setReportFilters = (patch: Partial<TeamReportFilters>) => {
+    const updated = new URLSearchParams(params);
+    const write = (key: string, value: string | number | undefined) => {
+      if (value === undefined || value === '' ) updated.delete(key);
+      else updated.set(key, String(value));
+    };
+    if ('userId' in patch) write('member', patch.userId);
+    // The project filter is shared with the header selector, so it writes the
+    // same key — clearing it here clears it there too, which is what a single
+    // visible "Project: All" control should mean.
+    if ('projectId' in patch) write('project', patch.projectId);
+    if ('status' in patch) write('status', patch.status);
+    if ('from' in patch) write('rangeFrom', patch.from);
+    if ('to' in patch) write('rangeTo', patch.to);
+    if ('limit' in patch) write('limit', patch.limit);
+    // offset 0 is the default, so it is removed rather than written as "0".
+    if ('offset' in patch) write('offset', patch.offset || undefined);
+    setParams(updated, { replace: true });
+  };
+
   const from = shiftWeeks(week, -7);
   const summary = useDashboardSummary(week, projectId);
   const teamStatus = useTeamStatus(week, projectId);
@@ -57,6 +96,18 @@ export default function TeamDashboardPage() {
   const activity = useActivityFeed(12);
   const balance = useWorkloadBalance(week);
   const { data: projects = [] } = useProjects();
+  // Managers hold user.view_all, which this endpoint requires.
+  const { data: users } = useUsers({ is_active: true, limit: 100 });
+  const teamReports = useReports({
+    user_id: reportFilters.userId,
+    project_id: reportFilters.projectId,
+    status: reportFilters.status || undefined,
+    from: reportFilters.from,
+    to: reportFilters.to,
+    limit: reportFilters.limit,
+    offset: reportFilters.offset,
+    sort: '-week_start',
+  });
 
   const data = summary.data;
   const isThisWeek = week === currentWeekStart();
@@ -276,6 +327,25 @@ export default function TeamDashboardPage() {
                 : undefined
           }
           emptyTitle="No active team members"
+        />
+      </Box>
+
+      {/* Filter across members, projects, statuses and an arbitrary date
+          range — the week-scoped table above cannot express any of those. */}
+      <Box sx={{ mb: 2.5 }}>
+        <TeamReportsPanel
+          data={teamReports.data}
+          isLoading={teamReports.isPending}
+          error={teamReports.error}
+          onRetry={teamReports.refetch}
+          members={users?.items ?? []}
+          filters={reportFilters}
+          onChange={setReportFilters}
+          onOpen={(report) =>
+            navigate(
+              report.status === 'SUBMITTED' ? `/review/${report.id}` : `/reports/${report.id}`,
+            )
+          }
         />
       </Box>
 

@@ -343,3 +343,88 @@ class TestProjects:
             headers=auth_header(admin),
         )
         assert r.status_code == 409
+
+
+class TestManagerFiltering:
+    """The filter combination the dashboard's "All reports" panel relies on.
+
+    A member is scoped to their own rows, so filtering by team member is only
+    meaningful for a manager — which is exactly the brief's "filter reports by
+    team member / by date range" requirement.
+    """
+
+    @pytest.fixture
+    def two_members_six_weeks(self, client, member_a, member_b, project):
+        base = monday_of(date(2026, 1, 5))
+        for owner in (member_a, member_b):
+            for i in range(3):
+                client.post(
+                    f"{API}/reports",
+                    json={
+                        "week_start": (base + timedelta(weeks=i)).isoformat(),
+                        "project_id": project["id"],
+                    },
+                    headers=auth_header(owner),
+                )
+
+    def test_manager_sees_every_members_reports(
+        self, client, manager, two_members_six_weeks
+    ):
+        assert client.get(f"{API}/reports", headers=auth_header(manager)).json()["total"] == 6
+
+    def test_manager_can_filter_by_team_member(
+        self, client, manager, member_a, two_members_six_weeks
+    ):
+        body = client.get(
+            f"{API}/reports?user_id={member_a.id}", headers=auth_header(manager)
+        ).json()
+        assert body["total"] == 3
+        assert {item["user"]["id"] for item in body["items"]} == {member_a.id}
+
+    def test_manager_can_filter_by_date_range(
+        self, client, manager, two_members_six_weeks
+    ):
+        # Weeks are 5, 12 and 19 January; this range covers the first two.
+        body = client.get(
+            f"{API}/reports?from=2026-01-05&to=2026-01-12", headers=auth_header(manager)
+        ).json()
+        assert body["total"] == 4
+
+    def test_member_and_date_range_combine(
+        self, client, manager, member_b, two_members_six_weeks
+    ):
+        body = client.get(
+            f"{API}/reports?user_id={member_b.id}&from=2026-01-12&to=2026-01-19",
+            headers=auth_header(manager),
+        ).json()
+        assert body["total"] == 2
+        assert {item["user"]["id"] for item in body["items"]} == {member_b.id}
+
+    def test_project_filter_combines_with_the_rest(
+        self, client, manager, member_a, project, two_members_six_weeks
+    ):
+        body = client.get(
+            f"{API}/reports?user_id={member_a.id}&project_id={project['id']}"
+            f"&from=2026-01-05&to=2026-01-19&status=DRAFT",
+            headers=auth_header(manager),
+        ).json()
+        assert body["total"] == 3
+
+    def test_an_empty_range_returns_an_empty_page_not_an_error(
+        self, client, manager, two_members_six_weeks
+    ):
+        body = client.get(
+            f"{API}/reports?from=2027-01-04&to=2027-01-11", headers=auth_header(manager)
+        ).json()
+        assert body["total"] == 0 and body["items"] == []
+
+    def test_a_member_using_the_same_filters_stays_scoped(
+        self, client, member_a, member_b, two_members_six_weeks
+    ):
+        """The panel's filters cannot become a scope-widening tool if a member
+        ever reaches this endpoint with them."""
+        body = client.get(
+            f"{API}/reports?user_id={member_b.id}&from=2026-01-05&to=2026-01-19",
+            headers=auth_header(member_a),
+        ).json()
+        assert body["total"] == 0

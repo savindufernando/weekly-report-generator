@@ -7,7 +7,7 @@ dashboard shows activity across the whole team.
 - **Backend:** FastAPI · SQLAlchemy 2.0 · Pydantic v2 · Alembic · JWT — 36 REST endpoints
 - **Frontend:** React 19 · TypeScript · Vite · Material UI · TanStack Query · Recharts — 13 pages
 - **Database:** MySQL / MariaDB
-- **Tests:** 158 backend tests, including a dedicated role-based-access-control suite
+- **Tests:** 165 backend tests, including a dedicated role-based-access-control suite
 
 ---
 
@@ -45,7 +45,8 @@ versions stay readable with their timestamps, and each review comment is
 foreign-keyed to the exact version it was written against.
 
 **Team dashboard** — four headline metrics (submitted this week, compliance rate,
-reports needing correction, open blockers) and six charts: tasks-completed trend,
+reports needing correction, open blockers), an "All reports" panel filterable by team
+member, project, status and date range, and six charts: tasks-completed trend,
 status by member, workload by project, time by task type, an activity feed of recent
 review actions, and a workload-balance view that flags outliers. Members who have not
 started a report at all are surfaced, not hidden.
@@ -163,7 +164,7 @@ backend/
     models/        SQLAlchemy ORM — the schema of record
     schemas/       Pydantic request/response contracts
     seeds/         demo dataset + the ER diagram generator
-  tests/           158 tests: auth, rbac, reports, workflow, dashboard, users
+  tests/           165 tests: auth, rbac, reports, workflow, dashboard, users
 
 frontend/src/
   pages/           one directory per area: auth, reports, manager, projects, admin
@@ -221,7 +222,7 @@ session timezone, a known source of off-by-one-week bugs in a weekly reporting t
 ## Testing
 
 ```bash
-cd backend && pytest -q                       # 158 tests
+cd backend && pytest -q                       # 165 tests
 cd frontend && npm run typecheck && npm run build
 ```
 
@@ -270,7 +271,3 @@ Named here rather than left to be discovered:
 - **Cross-member section comparison** (brief §4, bonus) — viewing one section, e.g.
   Blockers, across all members side by side.
 - **Deployment** — local only; there is no hosted instance.
-- The dashboard filters by week and project. Filtering by member and by arbitrary date
-  range is supported by the API (`user_id`, `from`, `to` on `GET /reports`) but is not
-  yet surfaced as dashboard controls; member drill-down is available by clicking
-  through to a member profile.
