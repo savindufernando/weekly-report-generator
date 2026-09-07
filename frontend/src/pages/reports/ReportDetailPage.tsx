@@ -11,6 +11,7 @@ import { ReviewCommentBanner } from '../../components/reports/ReviewCommentBanne
 import { VersionTimeline } from '../../components/review/VersionTimeline';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReport, useVersions } from '../../hooks/useReports';
+import { MONO } from '../../theme/theme';
 import { formatDateTime, formatWeek } from '../../utils/week';
 
 /**
@@ -144,7 +145,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
       <Typography variant="body2" color="text.secondary">
         {label}
       </Typography>
-      <Box sx={{ fontSize: 14, textAlign: 'right' }}>{value}</Box>
+      <Box sx={{ fontFamily: MONO, fontSize: 12.5, textAlign: 'right' }}>{value}</Box>
     </Stack>
   );
 }

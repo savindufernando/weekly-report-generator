@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 
 import { LoadingState } from '../components/common';
 import { AppLayout } from '../layouts/AppLayout';
@@ -18,9 +18,13 @@ const MyReportsPage = lazy(() => import('../pages/reports/MyReportsPage'));
 const NewReportPage = lazy(() => import('../pages/reports/NewReportPage'));
 const ReportEditorPage = lazy(() => import('../pages/reports/ReportEditorPage'));
 const ReportDetailPage = lazy(() => import('../pages/reports/ReportDetailPage'));
+const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'));
+const TeamDashboardPage = lazy(() => import('../pages/manager/TeamDashboardPage'));
+const MemberProfilePage = lazy(() => import('../pages/manager/MemberProfilePage'));
 const ReviewQueuePage = lazy(() => import('../pages/manager/ReviewQueuePage'));
 const ReviewReportPage = lazy(() => import('../pages/manager/ReviewReportPage'));
-const TeamDashboardPage = lazy(() => import('../pages/manager/TeamDashboardPage'));
+const ProjectsPage = lazy(() => import('../pages/projects/ProjectsPage'));
+const UsersPage = lazy(() => import('../pages/admin/UsersPage'));
 
 function Lazy() {
   return (
@@ -34,7 +38,7 @@ export const router = createBrowserRouter([
   {
     element: <Lazy />,
     children: [
-      // ---------------------------------------------------------- public
+      // ------------------------------------------------------------ public
       {
         element: <PublicOnlyRoute />,
         children: [
@@ -48,7 +52,7 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // ------------------------------------------------------ signed in
+      // -------------------------------------------------- any signed-in user
       {
         element: <ProtectedRoute />,
         children: [
@@ -57,28 +61,32 @@ export const router = createBrowserRouter([
             children: [
               { path: '/', element: <RootRedirect /> },
               { path: '/reports', element: <MyReportsPage /> },
-              // Static segment before the dynamic one, so /reports/new is not
-              // swallowed by /reports/:reportId.
+              // Static segment first, so /reports/new is not swallowed by
+              // /reports/:reportId.
               { path: '/reports/new', element: <NewReportPage /> },
               { path: '/reports/:reportId/edit', element: <ReportEditorPage /> },
               { path: '/reports/:reportId', element: <ReportDetailPage /> },
+              { path: '/settings', element: <SettingsPage /> },
               { path: '/403', element: <ForbiddenPage /> },
-              { path: '*', element: <NotFoundPage /> },
             ],
           },
         ],
       },
 
-      // ------------------------------------------- manager-gated section
-      // A second ProtectedRoute with a permission: a member reaching these
-      // URLs directly is redirected, and the API refuses them independently.
-      // Dashboard sits behind its own permission, separate from review.
+      /*
+       * Permission-gated sections. Each guard mirrors a server permission, so
+       * the sidebar, the route and the API all agree on who may go where —
+       * and the API refuses independently regardless of what the UI allows.
+       */
       {
         element: <ProtectedRoute permission="dashboard.view" />,
         children: [
           {
             element: <AppLayout />,
-            children: [{ path: '/dashboard', element: <TeamDashboardPage /> }],
+            children: [
+              { path: '/dashboard', element: <TeamDashboardPage /> },
+              { path: '/team/:userId', element: <MemberProfilePage /> },
+            ],
           },
         ],
       },
@@ -94,9 +102,35 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      {
+        element: <ProtectedRoute permission="project.manage" />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [{ path: '/projects', element: <ProjectsPage /> }],
+          },
+        ],
+      },
+      {
+        element: <ProtectedRoute permission="user.manage_roles" />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [{ path: '/admin/users', element: <UsersPage /> }],
+          },
+        ],
+      },
 
-      { path: '/404', element: <NotFoundPage /> },
-      { path: '*', element: <Navigate to="/404" replace /> },
+      // Catch-all last, inside the layout so a stray URL keeps the chrome.
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [{ path: '*', element: <NotFoundPage /> }],
+          },
+        ],
+      },
     ],
   },
 ]);

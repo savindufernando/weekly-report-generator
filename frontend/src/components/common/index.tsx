@@ -7,7 +7,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import type { ReactNode } from 'react';
 
 import { useAuth } from '../../contexts/AuthContext';
-import { SERIES_COLORS } from '../../theme/theme';
+import { MONO, SERIES_COLORS } from '../../theme/theme';
 import type { PermissionCode, TaskPriority, UserBrief } from '../../types';
 
 export { DataTable, type Column } from './DataTable';
@@ -143,22 +143,31 @@ export function MetricTile({
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent sx={{ p: 2.25, '&:last-child': { pb: 2.25 } }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-          {icon && <Box sx={{ color: 'text.secondary', display: 'flex' }}>{icon}</Box>}
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              fontWeight: 600,
-            }}
-          >
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1.25 }}>
+          {icon && (
+            <Box sx={{ color: 'text.disabled', display: 'flex', '& svg': { fontSize: 16 } }}>
+              {icon}
+            </Box>
+          )}
+          {/* Mono uppercase label — the field-label idiom used throughout. */}
+          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
             {label}
           </Typography>
         </Stack>
 
-        <Typography variant="h4" sx={{ lineHeight: 1.1 }}>
+        {/* The value is data, so it is set in mono with tabular figures: a
+            column of tiles then has its digits on a shared vertical rhythm. */}
+        <Typography
+          sx={{
+            fontFamily: MONO,
+            fontSize: 30,
+            fontWeight: 500,
+            lineHeight: 1.05,
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            color: isLoading ? 'text.disabled' : 'text.primary',
+          }}
+        >
           {isLoading ? '—' : value}
         </Typography>
 
@@ -170,8 +179,9 @@ export function MetricTile({
               sx={{
                 alignItems: 'center',
                 color: isGood ? 'success.main' : 'error.main',
-                fontSize: 12,
-                fontWeight: 600,
+                fontFamily: MONO,
+                fontSize: 11.5,
+                fontWeight: 500,
               }}
             >
               {/* An arrow AND a sign — the direction is never colour-only. */}

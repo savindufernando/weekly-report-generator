@@ -91,11 +91,11 @@ export default function RegisterPage() {
 
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <Typography variant="h6" sx={{ mb: 0.5 }}>
+      <Typography variant="h5" sx={{ mb: 0.75 }}>
         Create an account
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-        New accounts join as a team member
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+        New accounts join as a team member. An admin can change that later.
       </Typography>
 
       <Stack spacing={2}>

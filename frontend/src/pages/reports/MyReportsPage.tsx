@@ -9,7 +9,7 @@ import {
   type Column, DataTable, MetricTile, PageHeader, StatusChip,
 } from '../../components/common';
 import { useReports } from '../../hooks/useReports';
-import { STATUS_COLORS } from '../../theme/theme';
+import { MONO, STATUS_COLORS } from '../../theme/theme';
 import type { ReportListItem, ReportStatus } from '../../types';
 import { formatWeek, relativeTime } from '../../utils/week';
 
@@ -77,14 +77,22 @@ export default function MyReportsPage() {
       key: 'tasks',
       label: 'Tasks',
       align: 'right',
-      render: (row) => `${row.completed_task_count}/${row.task_count}`,
+      render: (row) => (
+        <Typography sx={{ fontFamily: MONO, fontSize: 13 }}>
+          {row.completed_task_count}/{row.task_count}
+        </Typography>
+      ),
     },
     {
       key: 'hours',
       label: 'Hours',
       align: 'right',
       hideOnMobile: true,
-      render: (row) => Number(row.total_hours_spent).toFixed(1),
+      render: (row) => (
+        <Typography sx={{ fontFamily: MONO, fontSize: 13 }}>
+          {Number(row.total_hours_spent).toFixed(1)}
+        </Typography>
+      ),
     },
     {
       key: 'status',
