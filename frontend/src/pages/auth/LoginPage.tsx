@@ -43,9 +43,9 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 const DEMO_ACCOUNTS = [
-  { email: 'sarah@company.com', role: 'admin' },
-  { email: 'david@company.com', role: 'manager' },
-  { email: 'amal@company.com', role: 'member' },
+  { email: 'admin@gmail.com', role: 'admin' },
+  { email: 'manager@gmail.com', role: 'manager' },
+  { email: 'savindu@gmail.com', role: 'member' },
 ];
 
 export default function LoginPage() {

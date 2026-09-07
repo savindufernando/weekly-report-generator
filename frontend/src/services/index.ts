@@ -8,6 +8,7 @@
 import { api } from './api';
 import type {
   ActivityItem,
+  CreatedUser,
   CurrentUser,
   DashboardSummary,
   LoginResponse,
@@ -30,6 +31,7 @@ import type {
   TeamStatusRow,
   TimeByTypeRow,
   User,
+  UserInput,
   VersionDetail,
   VersionSummary,
   WorkloadBalance,
@@ -169,6 +171,9 @@ export const dashboardService = {
 export const userService = {
   list: (params: { role?: string; is_active?: boolean; q?: string; limit?: number; offset?: number } = {}) =>
     api.get<Page<User>>('/users', { params }).then((r) => r.data),
+
+  create: (payload: UserInput) =>
+    api.post<CreatedUser>('/users', payload).then((r) => r.data),
 
   profile: (id: number, weeks = 12) =>
     api.get<MemberProfile>(`/users/${id}/profile`, { params: { weeks } }).then((r) => r.data),

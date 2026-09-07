@@ -110,10 +110,10 @@ def seed_users(db: Session, roles: dict[str, Role]) -> dict[str, User]:
         users[spec.key] = user
     db.flush()
 
-    # Everyone reports to Sarah except Sarah herself.
+    # Everyone reports to the admin except the admin.
     for key, user in users.items():
-        if key != "sarah":
-            user.manager_id = users["sarah"].id
+        if key != "admin":
+            user.manager_id = users["admin"].id
     db.flush()
     return users
 
@@ -207,7 +207,7 @@ def build_content(
 
     report.tasks = tasks
 
-    blocker_count = 2 if person_key == "kasun" else RNG.randint(0, 2)
+    blocker_count = 2 if person_key == "fernando" else RNG.randint(0, 2)
     chosen = RNG.sample(BLOCKERS, k=min(blocker_count, len(BLOCKERS)))
     if revision == "blocker_added":
         chosen = [("Sustained overload - need two tasks reassigned", "HIGH"), *chosen][:3]
@@ -235,9 +235,9 @@ def build_content(
         for i, text_ in enumerate(RNG.sample(NEXT_WEEK, k=RNG.randint(1, 3)))
     ]
 
-    # Praveen is meeting-heavy on purpose, so the time-by-type chart is not
+    # Nipun is meeting-heavy on purpose, so the time-by-type chart is not
     # simply "development" for everyone.
-    if person_key == "praveen":
+    if person_key == "nipun":
         split = {
             TaskType.MEETINGS: Decimal(RNG.randint(15, 18)),
             TaskType.DEVELOPMENT: Decimal(total_hours - 22),
@@ -325,7 +325,7 @@ def seed(db: Session, *, do_reset: bool = False) -> None:
 
     roles = seed_roles_and_permissions(db)
     users = seed_users(db, roles)
-    projects = seed_projects(db, users["sarah"])
+    projects = seed_projects(db, users["admin"])
     db.commit()
 
     current = monday_of(date.today())
@@ -366,8 +366,8 @@ def _summarise(db: Session, created: int, weeks: list[date]) -> None:
     print(f"  review actions   {reviews}")
     print(f"  multi-version    {multi}  (reports with a real correction history)")
     print(f"  weeks            {weeks[0]} .. {weeks[-1]}")
-    print(f"\n  Log in as sarah@company.com / {DEMO_PASSWORD} (admin)")
-    print("  Start at the Review Queue, then open Amal Perera's week-3 report")
+    print(f"\n  Log in as admin@gmail.com / {DEMO_PASSWORD} (admin)")
+    print("  Start at the Review Queue, then open Savindu Fernando's week-3 report")
     print("  to see the three-version correction history.")
 
 

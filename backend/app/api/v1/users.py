@@ -1,6 +1,7 @@
 """User listing, profiles and role administration."""
 from __future__ import annotations
 
+import secrets
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from pydantic import BaseModel, ConfigDict
@@ -8,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ConflictError, NotFoundError, PermissionDenied
+from app.core.security import hash_password
 from app.database.session import get_db
 from app.dependencies.auth import get_current_user, require_permission
 from app.dependencies.pagination import Pagination, pagination
@@ -15,10 +17,28 @@ from app.models import Report, Role, RoleCode, User
 from app.repositories.dashboard_repository import DashboardRepository
 from app.schemas.common import Page
 from app.schemas.dashboard import MemberProfile
-from app.schemas.user import UserBrief, UserOut, UserUpdate
+from app.schemas.user import UserBrief, UserCreate, UserCreated, UserOut, UserUpdate
 from app.utils.week import current_week_start, week_range
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+#: Ambiguous characters (0/O, 1/l/I) are excluded: this password gets read off a
+#: screen and typed by hand, so transcription errors are the likely failure.
+_PASSWORD_ALPHABET = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def _generate_password(length: int = 14) -> str:
+    """A one-time password for an admin-created account.
+
+    `secrets`, not `random`: the seeded PRNG the demo data uses is predictable
+    by design, and must never reach anything that guards an account.
+    """
+    while True:
+        candidate = "".join(secrets.choice(_PASSWORD_ALPHABET) for _ in range(length))
+        # Guarantee the generated value satisfies the same rule the API enforces
+        # on user-supplied passwords, rather than assuming it usually will.
+        if any(c.isalpha() for c in candidate) and any(c.isdigit() for c in candidate):
+            return candidate
 
 
 class RoleAssignment(BaseModel):
@@ -55,6 +75,64 @@ def list_users(
     ).unique().all()
     return Page[UserOut](
         items=list(rows), total=total, limit=page.limit, offset=page.offset
+    )
+
+
+@router.post(
+    "",
+    response_model=UserCreated,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("user.manage_roles"))],
+    summary="Create an account for a team member",
+)
+def create_user(
+    payload: UserCreate,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserCreated:
+    """Admin-side onboarding, as an alternative to self-registration.
+
+    The role comes from the body here — unlike `/auth/register`, where accepting
+    one would be privilege escalation — because the caller has already passed
+    the `user.manage_roles` gate.
+
+    If no password is supplied the server generates one and returns it *once*.
+    Only the hash is stored, so it cannot be read back afterwards; losing it
+    means the account needs a new password rather than a lookup.
+    """
+    email = payload.email.strip().lower()
+    if db.scalar(select(User).where(User.email == email)):
+        raise ConflictError("An account with this email already exists", field="email")
+
+    role = db.scalar(select(Role).where(Role.code == payload.role_code.value))
+    if role is None:
+        raise NotFoundError(f"Role {payload.role_code.value} does not exist")
+
+    # Default to reporting to the admin doing the creating; an explicit
+    # manager_id wins, and must point at someone who can actually review.
+    manager_id = payload.manager_id or current.id
+    manager = db.get(User, manager_id)
+    if manager is None:
+        raise NotFoundError("Manager not found")
+    if not manager.is_manager:
+        raise ConflictError("The assigned manager must be a manager or an admin")
+
+    generated = None if payload.password else _generate_password()
+    user = User(
+        email=email,
+        password_hash=hash_password(payload.password or generated),
+        full_name=payload.full_name,
+        job_title=payload.job_title,
+        role_id=role.id,
+        manager_id=manager_id,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return UserCreated(
+        **UserOut.model_validate(user).model_dump(), temporary_password=generated
     )
 
 

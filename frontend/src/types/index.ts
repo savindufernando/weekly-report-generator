@@ -92,6 +92,21 @@ export interface User {
   created_at: string;
 }
 
+export interface UserInput {
+  email: string;
+  full_name: string;
+  role_code: RoleCode;
+  job_title?: string | null;
+  /** Omit to have the server generate one and return it once. */
+  password?: string;
+  manager_id?: number;
+}
+
+/** The create response. `temporary_password` is shown once and never again. */
+export interface CreatedUser extends User {
+  temporary_password: string | null;
+}
+
 export interface CurrentUser extends User {
   permissions: PermissionCode[];
 }

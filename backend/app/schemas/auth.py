@@ -1,23 +1,11 @@
 """Authentication request/response contracts."""
 from __future__ import annotations
 
-import re
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.schemas.user import CurrentUser
-
-# At least one letter and one digit. Deliberately modest: length matters far
-# more than symbol classes, and heavy composition rules push people toward
-# predictable substitutions.
-_HAS_LETTER = re.compile(r"[A-Za-z]")
-_HAS_DIGIT = re.compile(r"\d")
-
-
-def _validate_password(v: str) -> str:
-    if not _HAS_LETTER.search(v) or not _HAS_DIGIT.search(v):
-        raise ValueError("Password must contain at least one letter and one number")
-    return v
+# The password rule is shared with admin-created accounts, so it is defined
+# once in `schemas/user.py` rather than duplicated here.
+from app.schemas.user import CurrentUser, validate_password as _validate_password
 
 
 class RegisterRequest(BaseModel):

@@ -26,29 +26,21 @@ class PersonSpec:
 
 
 PEOPLE: list[PersonSpec] = [
-    PersonSpec("sarah", "Sarah Chen", "sarah@company.com", RoleCode.ADMIN,
+    PersonSpec("admin", "Admin User", "admin@gmail.com", RoleCode.ADMIN,
                "Engineering Manager"),
-    PersonSpec("david", "David Fernando", "david@company.com", RoleCode.MANAGER,
+    PersonSpec("manager", "Team Manager", "manager@gmail.com", RoleCode.MANAGER,
                "Tech Lead"),
-    PersonSpec("amal", "Amal Perera", "amal@company.com", RoleCode.MEMBER,
+    PersonSpec("savindu", "Savindu Fernando", "savindu@gmail.com", RoleCode.MEMBER,
                "Backend Engineer", (36, 42), (5, 7)),
-    PersonSpec("nimali", "Nimali Silva", "nimali@company.com", RoleCode.MEMBER,
+    # Meeting-heavy, so the time-by-task-type chart is not all development.
+    PersonSpec("nipun", "Nipun Perera", "nipun@gmail.com", RoleCode.MEMBER,
                "Frontend Engineer", (34, 40), (4, 6)),
     # Deliberately overloaded — the workload-balance endpoint should flag them.
-    PersonSpec("kasun", "Kasun Jayawardena", "kasun@company.com", RoleCode.MEMBER,
+    PersonSpec("fernando", "Fernando Silva", "fernando@gmail.com", RoleCode.MEMBER,
                "Full Stack Engineer", (50, 56), (7, 9)),
-    # Deliberately underloaded — the other end of the same analytic.
-    PersonSpec("tharindu", "Tharindu Bandara", "tharindu@company.com", RoleCode.MEMBER,
-               "Junior Engineer", (22, 27), (2, 3)),
-    PersonSpec("ishara", "Ishara Wickrama", "ishara@company.com", RoleCode.MEMBER,
-               "QA Engineer", (33, 39), (4, 6)),
-    PersonSpec("ruwan", "Ruwan Alwis", "ruwan@company.com", RoleCode.MEMBER,
-               "Junior Engineer", (30, 36), (3, 5)),
-    PersonSpec("dilini", "Dilini Rathnayake", "dilini@company.com", RoleCode.MEMBER,
-               "DevOps Engineer", (35, 41), (4, 6)),
-    # Meeting-heavy, so the time-by-task-type chart is not all development.
-    PersonSpec("praveen", "Praveen Kumar", "praveen@company.com", RoleCode.MEMBER,
-               "Solutions Architect", (38, 44), (3, 5)),
+    # Also deliberately overloaded.
+    PersonSpec("sfern", "S. Fernando", "sfern@gmail.com", RoleCode.MEMBER,
+               "DevOps Engineer", (49, 55), (7, 9)),
 ]
 
 MEMBER_KEYS = [p.key for p in PEOPLE if p.role is RoleCode.MEMBER]
@@ -82,7 +74,7 @@ PROJECTS: list[ProjectSpec] = [
 class ReviewSpec:
     action: str                 # APPROVE | REQUEST_CHANGES
     comment: str | None
-    reviewer: str = "sarah"
+    reviewer: str = "admin"
     #: Hours after the submission that the review happened.
     delay_hours: int = 4
 
@@ -112,7 +104,7 @@ class WeekPlan:
     late: bool = False
 
 
-def _approved(day: int = 4, reviewer: str = "sarah") -> WeekPlan:
+def _approved(day: int = 4, reviewer: str = "admin") -> WeekPlan:
     return WeekPlan(
         rounds=[
             RoundSpec(
@@ -125,7 +117,7 @@ def _approved(day: int = 4, reviewer: str = "sarah") -> WeekPlan:
 
 def _late_approved(day: int = 9) -> WeekPlan:
     return WeekPlan(
-        rounds=[RoundSpec(day_offset=day, review=ReviewSpec("APPROVE", "Approved.", "sarah"))],
+        rounds=[RoundSpec(day_offset=day, review=ReviewSpec("APPROVE", "Approved.", "admin"))],
         late=True,
     )
 
@@ -150,7 +142,7 @@ def _missing() -> WeekPlan:
 
 
 #: The three-version correction history that is the demo centrepiece.
-AMAL_WEEK_3 = WeekPlan(
+SAVINDU_WEEK_3 = WeekPlan(
     rounds=[
         RoundSpec(
             day_offset=0,
@@ -183,7 +175,7 @@ AMAL_WEEK_3 = WeekPlan(
 )
 
 #: A simpler two-round history, so the feature does not look like a one-off.
-KASUN_WEEK_3 = WeekPlan(
+FERNANDO_WEEK_3 = WeekPlan(
     rounds=[
         RoundSpec(
             day_offset=0,
@@ -204,25 +196,22 @@ KASUN_WEEK_3 = WeekPlan(
 
 #: week index 0..5, where 5 is the current week.
 PLAN: dict[str, list[WeekPlan]] = {
-    "amal":     [_approved(), _approved(3), AMAL_WEEK_3, _approved(), _approved(2), _submitted(1)],
-    "nimali":   [_approved(), _approved(), _approved(3), _late_approved(), _approved(),
+    # The three-version correction history, and a submission awaiting review.
+    "savindu":  [_approved(), _approved(3), SAVINDU_WEEK_3, _approved(), _approved(2),
+                 _submitted(1)],
+    # Carries the late submission and the current-week NEEDS_CORRECTION case.
+    "nipun":    [_approved(), _approved(), _approved(3), _late_approved(), _approved(),
                  _needs_correction(1, "The blocker on the design handoff needs more detail - "
                                       "who is it blocked on and since when?")],
-    "kasun":    [_approved(), _approved(4), KASUN_WEEK_3, _approved(), _approved(3),
-                 _submitted(2)],
-    "tharindu": [_approved(), _approved(), _approved(), _approved(4), _approved(), _draft()],
-    "ishara":   [_approved(), _missing(), _approved(3), _missing(), _approved(),
-                 _needs_correction(2, "Two tasks are still at 0% with no blocker recorded. "
-                                      "Please explain what held them up.")],
-    # A new joiner: no history before week 5.
-    "ruwan":    [_missing(), _missing(), _missing(), _missing(), _approved(4), _submitted(3)],
-    # Files every week except the current one -> the "not yet started" case.
-    "dilini":   [_approved(), _approved(3), _approved(), _approved(), _approved(2), _missing()],
-    "praveen":  [_approved(), _approved(), _approved(4), _approved(), _late_approved(8),
+    # Overloaded, with a two-round correction history and a current-week draft.
+    "fernando": [_approved(), _approved(4), FERNANDO_WEEK_3, _approved(), _approved(3),
                  _draft()],
-    # The manager writes reports too.
-    "david":    [_approved(3, "sarah"), _approved(3, "sarah"), _approved(2, "sarah"),
-                 _approved(3, "sarah"), _approved(3, "sarah"), _submitted(2)],
+    # Missing weeks, including the current one -> the "not yet started" case.
+    "sfern":    [_missing(), _approved(), _approved(3), _late_approved(8), _approved(2),
+                 _missing()],
+    # The manager writes reports too, reviewed by the admin.
+    "manager":  [_approved(3, "admin"), _approved(3, "admin"), _approved(2, "admin"),
+                 _approved(3, "admin"), _approved(3, "admin"), _submitted(2)],
 }
 
 
@@ -280,14 +269,14 @@ ACHIEVEMENTS = [
     "Cut checkout page load from 3.2s to 1.1s",
     "Shipped the CSV export customers had been asking for",
     "Reduced failed payment retries by 60%",
-    "Onboarded Ruwan onto the payments codebase",
+    "Onboarded Nipun onto the payments codebase",
     "Closed out the last of the migration blockers",
     "Got the AI summary prototype working end to end",
 ]
 
 NEXT_WEEK = [
     "Finish the refund flow and get it reviewed",
-    "Pair with Nimali on the settings page",
+    "Pair with Nipun on the settings page",
     "Write up the migration runbook",
     "Clear the remaining CI flakes",
     "Start on the reporting export",

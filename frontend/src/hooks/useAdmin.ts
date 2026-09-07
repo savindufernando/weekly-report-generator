@@ -5,7 +5,7 @@ import { projectService, userService } from '../services';
 import { ApiError } from '../services/api';
 import { projectKeys } from './useReports';
 import { userKeys } from './useReview';
-import type { ProjectInput } from '../types';
+import type { ProjectInput, UserInput } from '../types';
 
 /* ------------------------------------------------------------------ projects */
 
@@ -78,6 +78,29 @@ export function useUsers(params: {
     queryKey: userKeys.list(params),
     queryFn: () => userService.list(params),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+  const { notify } = useSnackbar();
+
+  return useMutation({
+    mutationFn: (payload: UserInput) => userService.create(payload),
+    onSuccess: (user) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      // Deliberately no snackbar when a password was generated: the dialog
+      // keeps it on screen instead, and a toast that auto-dismisses is the
+      // wrong place for a credential shown exactly once.
+      if (!user.temporary_password) notify(`${user.full_name} added`, 'success');
+    },
+    onError: (error: ApiError) =>
+      notify(
+        error.status === 409
+          ? 'An account with that email already exists'
+          : (error.detail ?? 'Could not create the account'),
+        'error',
+      ),
   });
 }
 

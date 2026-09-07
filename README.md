@@ -4,10 +4,10 @@ A multi-user weekly reporting tool: team members submit structured weekly report
 review them through a correction cycle that preserves every past version, and a consolidated
 dashboard shows activity across the whole team.
 
-- **Backend:** FastAPI · SQLAlchemy 2.0 · Pydantic v2 · Alembic · JWT — 35 REST endpoints
+- **Backend:** FastAPI · SQLAlchemy 2.0 · Pydantic v2 · Alembic · JWT — 36 REST endpoints
 - **Frontend:** React 19 · TypeScript · Vite · Material UI · TanStack Query · Recharts — 13 pages
 - **Database:** MySQL / MariaDB
-- **Tests:** 143 backend tests, including a dedicated role-based-access-control suite
+- **Tests:** 158 backend tests, including a dedicated role-based-access-control suite
 
 ---
 
@@ -50,9 +50,9 @@ status by member, workload by project, time by task type, an activity feed of re
 review actions, and a workload-balance view that flags outliers. Members who have not
 started a report at all are surfaced, not hidden.
 
-**Projects, users, profiles** — project CRUD with member assignment, an admin user
-management page with role assignment, and a per-member profile showing full report
-history and stats.
+**Projects, users, profiles** — project CRUD with member assignment, and an admin user
+management page that creates accounts (with a one-time generated password), assigns
+roles and deactivates people. A per-member profile shows full report history and stats.
 
 **Pages** — login, register, my reports, new report, report editor, report detail,
 team dashboard, member profile, review queue, review report, projects, admin users,
@@ -125,28 +125,28 @@ one of the demo accounts below.
 
 ## Demo accounts
 
-The seed loads 10 users, 5 projects and 6 weeks of history. Password for all of them
+The seed loads 6 users, 5 projects and 6 weeks of history. The password for all of them
 is `Password123`.
 
 | Name | Email | Role |
 |---|---|---|
-| Sarah Chen | `sarah@company.com` | Admin |
-| David Fernando | `david@company.com` | Manager |
-| Amal Perera | `amal@company.com` | Member |
-| Nimali Silva | `nimali@company.com` | Member |
-| Kasun Jayawardena | `kasun@company.com` | Member — deliberately overloaded |
-| Tharindu Bandara | `tharindu@company.com` | Member — deliberately underloaded |
+| Admin User | `admin@gmail.com` | Admin |
+| Team Manager | `manager@gmail.com` | Manager |
+| Savindu Fernando | `savindu@gmail.com` | Member — carries the three-version correction history |
+| Nipun Perera | `nipun@gmail.com` | Member — meeting-heavy, skews the task-type chart |
+| Fernando Silva | `fernando@gmail.com` | Member — deliberately overloaded |
+| S. Fernando | `sfern@gmail.com` | Member — deliberately overloaded, misses weeks |
 
-...and four more members. The dataset is shaped rather than random: some weeks have no
-report at all so "not yet started" is exercised, one report carries a genuine
-three-version correction history, and the RNG seed is fixed so every machine shows
-identical numbers.
+The dataset is shaped rather than random: the current week deliberately contains one
+submitted, one needs-correction, one draft and one member with no report row at all, so
+"not yet started" is exercised. Two reports carry real multi-round correction histories,
+and the RNG seed is fixed so every machine shows identical numbers.
 
 The seed drives the real `ReportService.submit()` and `ReviewService.review()` instead
 of inserting rows directly, so seeded history is indistinguishable from history a user
 would create — and seeding fails loudly if the workflow is broken.
 
-**Suggested tour:** sign in as Sarah → Review Queue → open Amal Perera's week-3 report
+**Suggested tour:** sign in as `admin@gmail.com` → Review Queue → open Savindu Fernando's week-3 report
 → open the version history.
 
 ---
@@ -163,7 +163,7 @@ backend/
     models/        SQLAlchemy ORM — the schema of record
     schemas/       Pydantic request/response contracts
     seeds/         demo dataset + the ER diagram generator
-  tests/           143 tests: auth, rbac, reports, workflow, dashboard
+  tests/           158 tests: auth, rbac, reports, workflow, dashboard, users
 
 frontend/src/
   pages/           one directory per area: auth, reports, manager, projects, admin
@@ -221,7 +221,7 @@ session timezone, a known source of off-by-one-week bugs in a weekly reporting t
 ## Testing
 
 ```bash
-cd backend && pytest -q                       # 143 tests
+cd backend && pytest -q                       # 158 tests
 cd frontend && npm run typecheck && npm run build
 ```
 
